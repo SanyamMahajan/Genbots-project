@@ -20,7 +20,7 @@ const userSchema = new Schema({
         trim: true,
     },
 
-    fullname: {
+    fullName: {
         type: String,
         required: true,
         index: true,
@@ -28,12 +28,12 @@ const userSchema = new Schema({
     },
 
     avatar: {
-        type: String, // cloudinary URL
+        type: String, // Cloudinary URL
         required: true,
     },
 
     coverImage: {
-        type: String, // cloudinary URL
+        type: String, // Cloudinary URL
         required: true,
     },
 
@@ -52,6 +52,20 @@ const userSchema = new Schema({
         default: null,
     },
 
+    // 👇 Role Management (Default: "user")
+    role: {
+        type: String,
+        enum: ["user", "mentor", "investor", "admin"],
+        default: "user",
+    },
+
+    // 👇 Role Upgrade Request (User can request to become Mentor/Investor)
+    requestedRole: {
+        type: String,
+        enum: ["mentor", "investor"],
+        default: null,
+    },
+
     createdAt: {
         type: Date,
         default: Date.now,
@@ -63,44 +77,44 @@ const userSchema = new Schema({
     },
 });
 
-// Hash password before saving
+// 🔐 Hash password before saving
 userSchema.pre("save", async function (next) {
     if (!this.isModified("password")) return next();
-    if (this.isNew) {
-        this.password = await bcrypt.hash(this.password, 10);
-    }
+    this.password = await bcrypt.hash(this.password, 10);
     next();
 });
 
-// Compare passwords
+// 🔍 Compare passwords
 userSchema.methods.comparePassword = async function (password) {
     return await bcrypt.compare(password, this.password);
 };
 
-// Generate Access Token
+// 🔑 Generate Access Token
 userSchema.methods.generateAccessToken = function () {
     return jwt.sign(
         {
             id: this._id,
             username: this.username,
             email: this.email,
-            fullname: this.fullname,
+            fullName: this.fullName,
             avatar: this.avatar,
+            role: this.role,
         },
         process.env.ACCESS_TOKEN_SECRET,
         { expiresIn: process.env.ACCESS_TOKEN_EXPIRY }
     );
 };
 
-// Generate Refresh Token
+// 🔑 Generate Refresh Token
 userSchema.methods.generateRefreshToken = function () {
     return jwt.sign(
         {
             id: this._id,
             username: this.username,
             email: this.email,
-            fullname: this.fullname,
+            fullName: this.fullName,
             avatar: this.avatar,
+            role: this.role,
         },
         process.env.REFRESH_TOKEN_SECRET,
         { expiresIn: process.env.REFRESH_TOKEN_EXPIRY }
